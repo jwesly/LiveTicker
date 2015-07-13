@@ -1,6 +1,6 @@
 'use strict';
 var cheerio = require('cheerio'), request = require('request'), mongoose = require('mongoose'), async = require('async'), config = require('./config');
-
+var promisify = require('deferred').promisify;
 var companySchema = new mongoose.Schema({
 	"ticker": String,
 	"name" : String,
@@ -18,12 +18,16 @@ var test = new Company({ticker: "GOOG", name: "Google, INC", reports: "blah", se
 mongoose.connect('mongodb://localhost/test');
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
-	db.once('open', function (callback) {
+async.series([
+	function(callback){
+		db.once('open', function () {
 			request("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", 
 			function(err, response, body){
 				if(err && response.statusCode !== 200){console.log('Request error.');}
 				var $ = cheerio.load(body);
-				$("table").first().children().slice(1).each(function(){
+				var table = $("table").first().children().slice(1);
+				var rownum = table.length;
+				table.each(function(){
 					var row = $(this).children();
 					var record = new Company(
 						{ticker:row.eq(0).children().html()
@@ -34,21 +38,20 @@ db.on('error', console.error.bind(console, 'connection error:'));
 						, headquarters: row.eq(5).children().html()
 						, CIK: row.eq(7).html()
 						});
-					record.save(function (err, fluffy) {if (err) return console.error(err); /*console.log("written")*/});
+					record.save(function (err, fluffy) {
+						if (err) return console.error(err);
+							rownum--;
+							if(rownum==0){
+								return callback(null,null)
+					}});
+
 				});
-				//console.log(title);
 			});
-
-	});
-
-function(callback){
-	mongoose.connection.close();
-	console.log("Download Complete");
-	callback(null,null);
-}
-
-
-
-
-
-
+		});
+	},
+	function(callback){
+			mongoose.connection.close();
+			console.log("Download Complete");
+			return callback(null,null);
+	}
+]);
