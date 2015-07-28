@@ -1,8 +1,8 @@
-### LiveTicker
+# LiveTicker
 
-Simple stock price scraper
+A Simple stock price scraper
 
-#Installation
+###Installation
 
 Download files. Install all dependencies with npm. Run server.js
 
