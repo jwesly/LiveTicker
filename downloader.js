@@ -1,6 +1,5 @@
 'use strict';
 var cheerio = require('cheerio'), request = require('request'), mongoose = require('mongoose'), async = require('async'), config = require('./config');
-var promisify = require('deferred').promisify;
 var companySchema = new mongoose.Schema({
 	"ticker": String,
 	"name" : String,
@@ -15,7 +14,7 @@ var Company = mongoose.model('Company', companySchema, 'SP');
 
 var test = new Company({ticker: "GOOG", name: "Google, INC", reports: "blah", sector: "Tech", subsector: "Swag", "CIK": 120034});
 
-mongoose.connect('mongodb://localhost/test');
+mongoose.connect(config.creds);
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 async.series([
